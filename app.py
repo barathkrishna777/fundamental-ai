@@ -197,6 +197,24 @@ def get_stocks():
     results.sort(key=lambda x: x.get("score", 0), reverse=True)
     return jsonify({"stocks": results, "updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
 
+@app.route("/api/search")
+def search_stocks():
+    query = request.args.get("q", "").strip()
+    if not query or len(query) < 2:
+        return jsonify({"results": []})
+    try:
+        search = yf.Search(query, max_results=8)
+        results = []
+        for q in (search.quotes or []):
+            if q.get("quoteType") in ("EQUITY", "ETF"):
+                ticker = q.get("symbol", "")
+                name = q.get("longname") or q.get("shortname", "")
+                if ticker and name:
+                    results.append({"ticker": ticker, "name": name})
+        return jsonify({"results": results[:6]})
+    except Exception as e:
+        return jsonify({"results": [], "error": str(e)})
+
 @app.route("/api/stock/<ticker>")
 def get_single_stock(ticker):
     return jsonify(fetch_stock(ticker.upper()))

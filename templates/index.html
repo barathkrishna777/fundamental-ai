@@ -9,69 +9,81 @@
 </head>
 <body>
 
-<!-- ─── HEADER ─────────────────────────────────────────── -->
+<!-- HEADER -->
 <header>
   <div class="header-inner">
     <div class="logo">
-      <span class="logo-mark">▲</span>
-      <span class="logo-text">FundamentAI</span>
+      <span class="logo-mark">&#9650;</span>
+      <span class="logo-text">FundamentalAI</span>
     </div>
     <div class="header-meta">
-      <span id="last-updated" class="muted">—</span>
+      <span id="last-updated" class="muted">&mdash;</span>
     </div>
   </div>
 </header>
 
-<!-- ─── TICKER BAR ─────────────────────────────────────── -->
-<div class="ticker-bar">
-  <div class="ticker-bar-inner">
-    <textarea id="ticker-input" placeholder="AAPL MSFT GOOGL AMZN META NVDA TSLA AMD JPM BAC GS V MA JNJ PFE UNH WMT COST MCD XOM CVX NFLX DIS INTC CRM ORCL" rows="1"></textarea>
-    <button id="load-btn" class="btn-primary" onclick="loadStocks()">
-      <span id="btn-label">Analyze</span>
-      <span id="btn-spinner" class="spinner hidden"></span>
-    </button>
+<!-- WATCHLIST BAR -->
+<div class="watchlist-bar">
+  <div class="watchlist-inner">
+    <div class="watchlist-header">
+      <div class="watchlist-title">
+        <span>Watchlist</span>
+        <span class="watchlist-count" id="watchlist-count">0</span>
+      </div>
+      <div class="watchlist-actions">
+        <div class="search-add-wrap">
+          <input type="text" id="company-search" placeholder="Add a company&hellip;" autocomplete="off" />
+          <div id="search-dropdown" class="search-dropdown hidden"></div>
+        </div>
+        <button id="load-btn" class="btn-primary" onclick="loadStocks()">
+          <span id="btn-label">Analyze All</span>
+          <span id="btn-spinner" class="spinner hidden"></span>
+        </button>
+      </div>
+    </div>
+    <div id="watchlist-chips" class="watchlist-chips"></div>
   </div>
 </div>
 
-<!-- ─── SUMMARY CARDS ──────────────────────────────────── -->
+<!-- SUMMARY CARDS -->
 <section class="summary-section hidden" id="summary-section">
   <div class="summary-grid">
     <div class="summary-card">
       <div class="summary-label">Stocks Analyzed</div>
-      <div class="summary-value" id="s-count">—</div>
+      <div class="summary-value" id="s-count">&mdash;</div>
     </div>
     <div class="summary-card highlight-green">
       <div class="summary-label">Top Pick</div>
-      <div class="summary-value" id="s-top">—</div>
-      <div class="summary-sub" id="s-top-score">—</div>
+      <div class="summary-value" id="s-top">&mdash;</div>
+      <div class="summary-sub" id="s-top-score">&mdash;</div>
     </div>
     <div class="summary-card highlight-red">
       <div class="summary-label">Worst Pick</div>
-      <div class="summary-value" id="s-worst">—</div>
-      <div class="summary-sub" id="s-worst-score">—</div>
+      <div class="summary-value" id="s-worst">&mdash;</div>
+      <div class="summary-sub" id="s-worst-score">&mdash;</div>
     </div>
     <div class="summary-card">
       <div class="summary-label">Best Sector</div>
-      <div class="summary-value" id="s-sector">—</div>
+      <div class="summary-value" id="s-sector">&mdash;</div>
     </div>
     <div class="summary-card">
       <div class="summary-label">Strong Buys</div>
-      <div class="summary-value" id="s-buys">—</div>
+      <div class="summary-value" id="s-buys">&mdash;</div>
     </div>
     <div class="summary-card">
       <div class="summary-label">Avg Score</div>
-      <div class="summary-value" id="s-avg">—</div>
+      <div class="summary-value" id="s-avg">&mdash;</div>
     </div>
   </div>
 </section>
 
-<!-- ─── INSIGHTS ───────────────────────────────────────── -->
+<!-- INSIGHTS -->
 <section class="insights-section hidden" id="insights-section">
   <h2 class="section-title">Investment Insights</h2>
   <div id="insights-content" class="insights-grid"></div>
 </section>
 
-<!-- ─── SCORE CHART ────────────────────────────────────── -->
+<!-- SCORE CHART -->
 <section class="chart-section hidden" id="chart-section">
   <h2 class="section-title">Fundamental Score Ranking</h2>
   <div class="chart-wrap">
@@ -79,11 +91,10 @@
   </div>
 </section>
 
-<!-- ─── LEADERBOARD ────────────────────────────────────── -->
+<!-- LEADERBOARD -->
 <section class="leaderboard-section hidden" id="leaderboard-section">
   <h2 class="section-title">All Stocks</h2>
 
-  <!-- filters -->
   <div class="filter-row">
     <div class="filter-group">
       <label>Filter</label>
@@ -114,17 +125,17 @@
     </div>
     <div class="filter-group search-group">
       <label>Search</label>
-      <input id="search-input" type="text" placeholder="ticker or name…" oninput="applyFilters()" />
+      <input id="search-input" type="text" placeholder="ticker or name&hellip;" oninput="applyFilters()" />
     </div>
   </div>
 
   <div id="stock-grid" class="stock-grid"></div>
 </section>
 
-<!-- ─── DETAIL MODAL ───────────────────────────────────── -->
+<!-- DETAIL MODAL -->
 <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
   <div class="modal" id="modal">
-    <button class="modal-close" onclick="closeModal()">✕</button>
+    <button class="modal-close" onclick="closeModal()">&#10005;</button>
     <div id="modal-content"></div>
   </div>
 </div>

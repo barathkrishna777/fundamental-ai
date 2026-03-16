@@ -1,37 +1,134 @@
+/* ── Default watchlist ──────────────────────────────────────── */
+const DEFAULT_STOCKS = [
+  { ticker: 'AAPL',  name: 'Apple Inc.' },
+  { ticker: 'MSFT',  name: 'Microsoft Corporation' },
+  { ticker: 'GOOGL', name: 'Alphabet Inc.' },
+  { ticker: 'AMZN',  name: 'Amazon.com Inc.' },
+  { ticker: 'META',  name: 'Meta Platforms Inc.' },
+  { ticker: 'NVDA',  name: 'NVIDIA Corporation' },
+  { ticker: 'TSLA',  name: 'Tesla Inc.' },
+  { ticker: 'AMD',   name: 'Advanced Micro Devices Inc.' },
+  { ticker: 'INTC',  name: 'Intel Corporation' },
+  { ticker: 'CRM',   name: 'Salesforce Inc.' },
+  { ticker: 'ORCL',  name: 'Oracle Corporation' },
+  { ticker: 'JPM',   name: 'JPMorgan Chase & Co.' },
+  { ticker: 'BAC',   name: 'Bank of America Corp.' },
+  { ticker: 'GS',    name: 'Goldman Sachs Group Inc.' },
+  { ticker: 'V',     name: 'Visa Inc.' },
+  { ticker: 'MA',    name: 'Mastercard Inc.' },
+  { ticker: 'JNJ',   name: 'Johnson & Johnson' },
+  { ticker: 'PFE',   name: 'Pfizer Inc.' },
+  { ticker: 'UNH',   name: 'UnitedHealth Group Inc.' },
+  { ticker: 'WMT',   name: 'Walmart Inc.' },
+  { ticker: 'COST',  name: 'Costco Wholesale Corporation' },
+  { ticker: 'MCD',   name: "McDonald's Corporation" },
+  { ticker: 'XOM',   name: 'Exxon Mobil Corporation' },
+  { ticker: 'CVX',   name: 'Chevron Corporation' },
+  { ticker: 'NFLX',  name: 'Netflix Inc.' },
+  { ticker: 'DIS',   name: 'The Walt Disney Company' },
+];
+
 /* ── State ─────────────────────────────────────────────────── */
+// watchlist: Map<ticker -> name>
+const watchlist = new Map();
 let allStocks = [];
 let scoreChartInstance = null;
 let modalPriceChart = null;
+let searchDebounce = null;
 
-/* ── Colour helpers ─────────────────────────────────────────── */
-function scoreColor(s) {
-  if (s >= 70) return '#22c55e';
-  if (s >= 55) return '#84cc16';
-  if (s >= 40) return '#f59e0b';
-  if (s >= 25) return '#f97316';
-  return '#ef4444';
+/* ── Watchlist management ───────────────────────────────────── */
+function initWatchlist() {
+  DEFAULT_STOCKS.forEach(({ ticker, name }) => watchlist.set(ticker, name));
+  renderWatchlist();
 }
-function scoreClass(s) {
-  if (s >= 70) return 'score-green';
-  if (s >= 55) return 'score-lime';
-  if (s >= 40) return 'score-amber';
-  if (s >= 25) return 'score-orange';
-  return 'score-red';
+
+function renderWatchlist() {
+  const container = document.getElementById('watchlist-chips');
+  const countEl = document.getElementById('watchlist-count');
+  countEl.textContent = watchlist.size;
+
+  container.innerHTML = [...watchlist.entries()].map(([ticker, name]) => `
+    <div class="stock-chip">
+      <span class="chip-name">${name}</span>
+      <span class="chip-ticker">${ticker}</span>
+      <button class="chip-remove" onclick="removeFromWatchlist('${ticker}')" title="Remove">&times;</button>
+    </div>
+  `).join('');
 }
-function recClass(r) {
-  const m = { 'Strong Buy': 'rec-strong-buy', 'Buy': 'rec-buy', 'Hold': 'rec-hold', 'Reduce': 'rec-reduce', 'Sell': 'rec-sell' };
-  return m[r] || 'rec-hold';
+
+function removeFromWatchlist(ticker) {
+  watchlist.delete(ticker);
+  renderWatchlist();
 }
-function fmt(v, digits = 2, suffix = '') {
-  if (v == null) return '—';
-  return Number(v).toFixed(digits) + suffix;
+
+function addToWatchlist(ticker, name) {
+  watchlist.set(ticker, name);
+  renderWatchlist();
 }
-function fmtPct(v) { return v == null ? '—' : (v * 100).toFixed(1) + '%'; }
+
+/* ── Company search ─────────────────────────────────────────── */
+function handleSearchInput() {
+  const query = document.getElementById('company-search').value.trim();
+  clearTimeout(searchDebounce);
+
+  if (query.length < 2) {
+    hideDropdown();
+    return;
+  }
+
+  searchDebounce = setTimeout(() => fetchSearchResults(query), 300);
+}
+
+async function fetchSearchResults(query) {
+  try {
+    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+    const data = await res.json();
+    showDropdown(data.results || []);
+  } catch {
+    hideDropdown();
+  }
+}
+
+function showDropdown(results) {
+  const dropdown = document.getElementById('search-dropdown');
+
+  if (!results.length) {
+    dropdown.innerHTML = '<div class="dropdown-empty">No results found</div>';
+    dropdown.classList.remove('hidden');
+    return;
+  }
+
+  dropdown.innerHTML = results.map(r => `
+    <div class="dropdown-item" onclick="selectResult('${r.ticker}', ${JSON.stringify(r.name).replace(/"/g, '&quot;')})">
+      <span class="dropdown-name">${r.name}</span>
+      <span class="dropdown-ticker">${r.ticker}</span>
+    </div>
+  `).join('');
+  dropdown.classList.remove('hidden');
+}
+
+function hideDropdown() {
+  const dropdown = document.getElementById('search-dropdown');
+  dropdown.classList.add('hidden');
+  dropdown.innerHTML = '';
+}
+
+function selectResult(ticker, name) {
+  addToWatchlist(ticker, name);
+  document.getElementById('company-search').value = '';
+  hideDropdown();
+}
+
+/* ── Close dropdown on outside click ───────────────────────── */
+document.addEventListener('click', e => {
+  const wrap = document.querySelector('.search-add-wrap');
+  if (wrap && !wrap.contains(e.target)) hideDropdown();
+});
 
 /* ── Load stocks ────────────────────────────────────────────── */
 async function loadStocks() {
-  const raw = document.getElementById('ticker-input').value.trim();
-  const tickers = raw ? raw.split(/[\s,]+/).filter(Boolean) : [];
+  const tickers = [...watchlist.keys()];
+  if (!tickers.length) { alert('Your watchlist is empty.'); return; }
 
   setLoading(true);
 
@@ -39,7 +136,7 @@ async function loadStocks() {
     const res = await fetch('/api/stocks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tickers: tickers.length ? tickers : null })
+      body: JSON.stringify({ tickers })
     });
     const data = await res.json();
     allStocks = data.stocks || [];
@@ -67,9 +164,34 @@ function setLoading(on) {
   const label = document.getElementById('btn-label');
   const spinner = document.getElementById('btn-spinner');
   btn.disabled = on;
-  label.textContent = on ? 'Loading…' : 'Analyze';
+  label.textContent = on ? 'Loading\u2026' : 'Analyze All';
   spinner.classList.toggle('hidden', !on);
 }
+
+/* ── Colour helpers ─────────────────────────────────────────── */
+function scoreColor(s) {
+  if (s >= 70) return '#22c55e';
+  if (s >= 55) return '#84cc16';
+  if (s >= 40) return '#f59e0b';
+  if (s >= 25) return '#f97316';
+  return '#ef4444';
+}
+function scoreClass(s) {
+  if (s >= 70) return 'score-green';
+  if (s >= 55) return 'score-lime';
+  if (s >= 40) return 'score-amber';
+  if (s >= 25) return 'score-orange';
+  return 'score-red';
+}
+function recClass(r) {
+  const m = { 'Strong Buy': 'rec-strong-buy', 'Buy': 'rec-buy', 'Hold': 'rec-hold', 'Reduce': 'rec-reduce', 'Sell': 'rec-sell' };
+  return m[r] || 'rec-hold';
+}
+function fmt(v, digits = 2, suffix = '') {
+  if (v == null) return '\u2014';
+  return Number(v).toFixed(digits) + suffix;
+}
+function fmtPct(v) { return v == null ? '\u2014' : (v * 100).toFixed(1) + '%'; }
 
 /* ── Summary ────────────────────────────────────────────────── */
 function renderSummary() {
@@ -79,7 +201,6 @@ function renderSummary() {
   const avg = valid.reduce((a, s) => a + s.score, 0) / (valid.length || 1);
   const strongBuys = valid.filter(s => s.recommendation === 'Strong Buy').length;
 
-  // Best sector by avg score
   const sectors = {};
   valid.forEach(s => {
     if (s.sector && s.sector !== 'N/A') {
@@ -87,7 +208,7 @@ function renderSummary() {
       sectors[s.sector].push(s.score);
     }
   });
-  let bestSector = '—';
+  let bestSector = '\u2014';
   let bestAvg = 0;
   Object.entries(sectors).forEach(([sec, scores]) => {
     const a = scores.reduce((x, y) => x + y, 0) / scores.length;
@@ -95,9 +216,9 @@ function renderSummary() {
   });
 
   document.getElementById('s-count').textContent = valid.length;
-  document.getElementById('s-top').textContent = top ? top.ticker : '—';
+  document.getElementById('s-top').textContent = top ? top.ticker : '\u2014';
   document.getElementById('s-top-score').textContent = top ? `Score ${top.score}/100` : '';
-  document.getElementById('s-worst').textContent = worst ? worst.ticker : '—';
+  document.getElementById('s-worst').textContent = worst ? worst.ticker : '\u2014';
   document.getElementById('s-worst-score').textContent = worst ? `Score ${worst.score}/100` : '';
   document.getElementById('s-sector').textContent = bestSector;
   document.getElementById('s-buys').textContent = strongBuys;
@@ -110,67 +231,60 @@ function renderInsights() {
   const container = document.getElementById('insights-content');
   const insights = [];
 
-  // Top 3 by score
   const top3 = valid.slice(0, 3);
   if (top3.length) {
     insights.push({
       icon: '🏆',
       title: 'Top Investment Picks',
-      body: top3.map(s => `<strong>${s.ticker}</strong> (${s.recommendation}, score ${s.score}) — ${s.name}`).join('<br>')
+      body: top3.map(s => `<strong>${s.ticker}</strong> (${s.recommendation}, score ${s.score}) \u2014 ${s.name}`).join('<br>')
     });
   }
 
-  // Value plays: low P/E + decent score
   const value = valid.filter(s => s.pe_ratio && s.pe_ratio < 18 && s.score >= 40).slice(0, 3);
   if (value.length) {
     insights.push({
       icon: '💎',
       title: 'Value Opportunities',
-      body: value.map(s => `<strong>${s.ticker}</strong> — P/E ${fmt(s.pe_ratio)}x, score ${s.score}`).join('<br>')
+      body: value.map(s => `<strong>${s.ticker}</strong> \u2014 P/E ${fmt(s.pe_ratio)}x, score ${s.score}`).join('<br>')
     });
   }
 
-  // Growth stars
   const growth = valid.filter(s => s.revenue_growth && s.revenue_growth > 0.15).sort((a, b) => b.revenue_growth - a.revenue_growth).slice(0, 3);
   if (growth.length) {
     insights.push({
       icon: '🚀',
       title: 'High-Growth Stocks',
-      body: growth.map(s => `<strong>${s.ticker}</strong> — Revenue growth ${fmtPct(s.revenue_growth)}`).join('<br>')
+      body: growth.map(s => `<strong>${s.ticker}</strong> \u2014 Revenue growth ${fmtPct(s.revenue_growth)}`).join('<br>')
     });
   }
 
-  // Dividend income
   const divs = valid.filter(s => s.dividend_yield && s.dividend_yield > 0.01).sort((a, b) => b.dividend_yield - a.dividend_yield).slice(0, 3);
   if (divs.length) {
     insights.push({
       icon: '💰',
       title: 'Dividend Income Plays',
-      body: divs.map(s => `<strong>${s.ticker}</strong> — Yield ${fmtPct(s.dividend_yield)}`).join('<br>')
+      body: divs.map(s => `<strong>${s.ticker}</strong> \u2014 Yield ${fmtPct(s.dividend_yield)}`).join('<br>')
     });
   }
 
-  // Avoid
   const avoid = valid.filter(s => s.score < 25).slice(0, 3);
   if (avoid.length) {
     insights.push({
       icon: '⚠️',
       title: 'Stocks to Avoid',
-      body: avoid.map(s => `<strong>${s.ticker}</strong> — Score ${s.score}/100, ${s.recommendation}`).join('<br>')
+      body: avoid.map(s => `<strong>${s.ticker}</strong> \u2014 Score ${s.score}/100, ${s.recommendation}`).join('<br>')
     });
   }
 
-  // Best ROE
   const roeStars = valid.filter(s => s.roe).sort((a, b) => b.roe - a.roe).slice(0, 3);
   if (roeStars.length) {
     insights.push({
       icon: '📈',
       title: 'Best Return on Equity',
-      body: roeStars.map(s => `<strong>${s.ticker}</strong> — ROE ${fmtPct(s.roe)}`).join('<br>')
+      body: roeStars.map(s => `<strong>${s.ticker}</strong> \u2014 ROE ${fmtPct(s.roe)}`).join('<br>')
     });
   }
 
-  // Sector averages
   const sectors = {};
   valid.forEach(s => {
     if (s.sector && s.sector !== 'N/A') {
@@ -186,7 +300,7 @@ function renderInsights() {
     insights.push({
       icon: '🗂️',
       title: 'Best Sectors (avg score)',
-      body: sectorAvgs.slice(0, 4).map(s => `<strong>${s.name}</strong> — avg ${s.avg.toFixed(0)}/100`).join('<br>')
+      body: sectorAvgs.slice(0, 4).map(s => `<strong>${s.name}</strong> \u2014 avg ${s.avg.toFixed(0)}/100`).join('<br>')
     });
   }
 
@@ -305,7 +419,7 @@ function stockCard(s) {
       <div class="card-header">
         <div>
           <div class="card-ticker">${s.ticker}</div>
-          <div class="card-name" title="${s.name || ''}">${s.name || '—'}</div>
+          <div class="card-name" title="${s.name || ''}">${s.name || '\u2014'}</div>
           <div class="card-sector">${s.sector || ''}</div>
         </div>
         <div class="score-badge">
@@ -322,7 +436,7 @@ function stockCard(s) {
       <div class="card-metrics">
         <div class="metric-item">
           <div class="metric-label">Price</div>
-          <div class="metric-value">${s.price != null ? '$' + fmt(s.price) : '—'}</div>
+          <div class="metric-value">${s.price != null ? '$' + fmt(s.price) : '\u2014'}</div>
         </div>
         <div class="metric-item">
           <div class="metric-label">P/E Ratio</div>
@@ -350,7 +464,7 @@ function openModal(s) {
       ${s.sector && s.sector !== 'N/A' ? `<span class="tag">${s.sector}</span>` : ''}
       ${s.industry && s.industry !== 'N/A' ? `<span class="tag">${s.industry}</span>` : ''}
       ${s.market_cap ? `<span class="tag">${s.market_cap} Market Cap</span>` : ''}
-      ${s.beta != null ? `<span class="tag">β ${fmt(s.beta)}</span>` : ''}
+      ${s.beta != null ? `<span class="tag">\u03b2 ${fmt(s.beta)}</span>` : ''}
     </div>
 
     <div class="modal-score-row">
@@ -368,14 +482,14 @@ function openModal(s) {
 
     <div class="modal-section-title">Valuation</div>
     <div class="modal-metrics-grid">
-      ${mCell('Price', s.price != null ? '$' + fmt(s.price) : '—')}
+      ${mCell('Price', s.price != null ? '$' + fmt(s.price) : '\u2014')}
       ${mCell('P/E (TTM)', fmt(s.pe_ratio) + 'x')}
       ${mCell('Forward P/E', fmt(s.forward_pe) + 'x')}
       ${mCell('P/B Ratio', fmt(s.pb_ratio) + 'x')}
       ${mCell('EV/EBITDA', fmt(s.ev_ebitda) + 'x')}
-      ${mCell('Analyst Target', s.analyst_target ? '$' + fmt(s.analyst_target) : '—')}
-      ${mCell('52W High', s['52w_high'] ? '$' + fmt(s['52w_high']) : '—')}
-      ${mCell('52W Low', s['52w_low'] ? '$' + fmt(s['52w_low']) : '—')}
+      ${mCell('Analyst Target', s.analyst_target ? '$' + fmt(s.analyst_target) : '\u2014')}
+      ${mCell('52W High', s['52w_high'] ? '$' + fmt(s['52w_high']) : '\u2014')}
+      ${mCell('52W Low', s['52w_low'] ? '$' + fmt(s['52w_low']) : '\u2014')}
     </div>
 
     <div class="modal-section-title">Profitability</div>
@@ -390,7 +504,7 @@ function openModal(s) {
 
     <div class="modal-section-title">Financial Health</div>
     <div class="modal-metrics-grid">
-      ${mCell('Debt / Equity', s.debt_to_equity != null ? fmt(s.debt_to_equity) + '%' : '—')}
+      ${mCell('Debt / Equity', s.debt_to_equity != null ? fmt(s.debt_to_equity) + '%' : '\u2014')}
       ${mCell('Current Ratio', fmt(s.current_ratio))}
     </div>
 
@@ -480,7 +594,10 @@ function closeModal(e) {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal({}); });
 
-/* ── Auto-run on page load ───────────────────────────────────── */
+/* ── Init ───────────────────────────────────────────────────── */
 window.addEventListener('DOMContentLoaded', () => {
-  // Don't auto-load — let user click Analyze
+  initWatchlist();
+
+  const searchInput = document.getElementById('company-search');
+  searchInput.addEventListener('input', handleSearchInput);
 });
