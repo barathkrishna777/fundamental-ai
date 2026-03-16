@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock Fundamental Analyzer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<!-- ─── HEADER ─────────────────────────────────────────── -->
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-mark">▲</span>
+      <span class="logo-text">FundamentAI</span>
+    </div>
+    <div class="header-meta">
+      <span id="last-updated" class="muted">—</span>
+    </div>
+  </div>
+</header>
+
+<!-- ─── TICKER BAR ─────────────────────────────────────── -->
+<div class="ticker-bar">
+  <div class="ticker-bar-inner">
+    <textarea id="ticker-input" placeholder="AAPL MSFT GOOGL AMZN META NVDA TSLA AMD JPM BAC GS V MA JNJ PFE UNH WMT COST MCD XOM CVX NFLX DIS INTC CRM ORCL" rows="1"></textarea>
+    <button id="load-btn" class="btn-primary" onclick="loadStocks()">
+      <span id="btn-label">Analyze</span>
+      <span id="btn-spinner" class="spinner hidden"></span>
+    </button>
+  </div>
+</div>
+
+<!-- ─── SUMMARY CARDS ──────────────────────────────────── -->
+<section class="summary-section hidden" id="summary-section">
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-label">Stocks Analyzed</div>
+      <div class="summary-value" id="s-count">—</div>
+    </div>
+    <div class="summary-card highlight-green">
+      <div class="summary-label">Top Pick</div>
+      <div class="summary-value" id="s-top">—</div>
+      <div class="summary-sub" id="s-top-score">—</div>
+    </div>
+    <div class="summary-card highlight-red">
+      <div class="summary-label">Worst Pick</div>
+      <div class="summary-value" id="s-worst">—</div>
+      <div class="summary-sub" id="s-worst-score">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Best Sector</div>
+      <div class="summary-value" id="s-sector">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Strong Buys</div>
+      <div class="summary-value" id="s-buys">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Avg Score</div>
+      <div class="summary-value" id="s-avg">—</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── INSIGHTS ───────────────────────────────────────── -->
+<section class="insights-section hidden" id="insights-section">
+  <h2 class="section-title">Investment Insights</h2>
+  <div id="insights-content" class="insights-grid"></div>
+</section>
+
+<!-- ─── SCORE CHART ────────────────────────────────────── -->
+<section class="chart-section hidden" id="chart-section">
+  <h2 class="section-title">Fundamental Score Ranking</h2>
+  <div class="chart-wrap">
+    <canvas id="score-chart"></canvas>
+  </div>
+</section>
+
+<!-- ─── LEADERBOARD ────────────────────────────────────── -->
+<section class="leaderboard-section hidden" id="leaderboard-section">
+  <h2 class="section-title">All Stocks</h2>
+
+  <!-- filters -->
+  <div class="filter-row">
+    <div class="filter-group">
+      <label>Filter</label>
+      <select id="rec-filter" onchange="applyFilters()">
+        <option value="">All Ratings</option>
+        <option value="Strong Buy">Strong Buy</option>
+        <option value="Buy">Buy</option>
+        <option value="Hold">Hold</option>
+        <option value="Reduce">Reduce</option>
+        <option value="Sell">Sell</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Sector</label>
+      <select id="sector-filter" onchange="applyFilters()">
+        <option value="">All Sectors</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Sort by</label>
+      <select id="sort-by" onchange="applyFilters()">
+        <option value="score">Score</option>
+        <option value="pe_ratio">P/E Ratio</option>
+        <option value="roe">ROE</option>
+        <option value="revenue_growth">Revenue Growth</option>
+        <option value="profit_margin">Profit Margin</option>
+      </select>
+    </div>
+    <div class="filter-group search-group">
+      <label>Search</label>
+      <input id="search-input" type="text" placeholder="ticker or name…" oninput="applyFilters()" />
+    </div>
+  </div>
+
+  <div id="stock-grid" class="stock-grid"></div>
+</section>
+
+<!-- ─── DETAIL MODAL ───────────────────────────────────── -->
+<div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
