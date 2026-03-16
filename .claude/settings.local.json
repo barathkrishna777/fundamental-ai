@@ -3,7 +3,8 @@
     "allow": [
       "Bash(cd:*)",
       "Bash(powershell -Command \"Rename-Item 'C:\\\\claude_projects\\\\stocks' 'fundamental-ai'\" && echo \"Done\")",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(python:*)"
     ]
   }
 }

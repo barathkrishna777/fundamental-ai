@@ -18,6 +18,7 @@
     </div>
     <div class="header-meta">
       <span id="last-updated" class="muted">&mdash;</span>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9790;</button>
     </div>
   </div>
 </header>
@@ -29,6 +30,7 @@
       <div class="watchlist-title">
         <span>Watchlist</span>
         <span class="watchlist-count" id="watchlist-count">0</span>
+        <button class="btn-ghost" onclick="clearWatchlist()">Clear all</button>
       </div>
       <div class="watchlist-actions">
         <div class="search-add-wrap">
@@ -132,6 +134,50 @@
   <div id="stock-grid" class="stock-grid"></div>
 </section>
 
+<!-- PORTFOLIO -->
+<section class="portfolio-section hidden" id="portfolio-section">
+  <div class="portfolio-header">
+    <div class="section-title-row">
+      <h2 class="section-title">Portfolio</h2>
+      <div class="portfolio-summary" id="portfolio-summary"></div>
+    </div>
+    <button class="btn-ghost" onclick="showAddPositionForm()">+ Add position</button>
+  </div>
+  <div id="portfolio-add-form" class="portfolio-add-form hidden">
+    <div class="search-add-wrap">
+      <input type="text" id="portfolio-search" placeholder="Search company&hellip;" autocomplete="off" />
+      <div id="portfolio-search-dropdown" class="search-dropdown hidden"></div>
+    </div>
+    <input type="number" id="portfolio-shares" placeholder="Shares" min="0" step="any" class="portfolio-input" />
+    <input type="number" id="portfolio-cost" placeholder="Avg cost ($)" min="0" step="any" class="portfolio-input" />
+    <button class="btn-primary btn-sm" onclick="addPosition()">Add</button>
+    <button class="btn-ghost" onclick="hideAddPositionForm()">Cancel</button>
+  </div>
+  <div id="portfolio-table-wrap"></div>
+</section>
+
+<!-- COMPARE BAR (fixed bottom) -->
+<div id="compare-bar" class="compare-bar hidden">
+  <div class="compare-bar-inner">
+    <div class="compare-bar-left">
+      <span class="compare-bar-label">Comparing</span>
+      <div id="compare-bar-chips" class="compare-bar-chips"></div>
+    </div>
+    <div class="compare-bar-right">
+      <button class="btn-primary btn-sm" onclick="openCompareModal()">Compare</button>
+      <button class="btn-ghost" onclick="clearCompare()">Clear</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMPARE MODAL -->
+<div id="compare-overlay" class="modal-overlay hidden" onclick="closeCompareModal(event)">
+  <div class="modal modal-wide" id="compare-modal">
+    <button class="modal-close" onclick="closeCompareModal()">&#10005;</button>
+    <div id="compare-content"></div>
+  </div>
+</div>
+
 <!-- DETAIL MODAL -->
 <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
   <div class="modal" id="modal">
@@ -139,6 +185,9 @@
     <div id="modal-content"></div>
   </div>
 </div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container" class="toast-container"></div>
 
 <script src="/static/app.js"></script>
 </body>
